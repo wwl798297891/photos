@@ -495,11 +495,18 @@
                     const reader = new FileReader();
 
                     reader.onload = function(e) {
-                        photoData[`photo${i}`] = e.target.result;
+                        // 确保图片数据是 base64 格式
+                        const imageData = e.target.result;
+                        if (!imageData.startsWith('data:image')) {
+                            photoData[`photo${i}`] = 'data:image/jpeg;base64,' + imageData;
+                        } else {
+                            photoData[`photo${i}`] = imageData;
+                        }
                         checkbox.checked = true;
                         try {
                             // 保存完整的图片数据到 localStorage
-                            localStorage.setItem(`partsPhoto_photo${i}`, e.target.result);
+                            localStorage.setItem(`partsPhoto_photo${i}`, photoData[`photo${i}`]);
+                            console.log(`保存照片 ${i} 成功`);
                         } catch (e) {
                             console.error('保存照片状态时出错:', e);
                         }
@@ -523,6 +530,28 @@
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 2000);
+        }
+
+        // 在照片确认按钮的点击处理函数中
+        function confirmPhoto(index) {
+            // 阻止默认行为
+            event.preventDefault();
+            
+            const canvas = document.getElementById(`canvas${index}`);
+            if (canvas) {
+                // 获取图片数据
+                const imageData = canvas.toDataURL('image/jpeg');
+                // 保存到 localStorage
+                localStorage.setItem(`partsPhoto_photo${index}`, imageData);
+                
+                // 隐藏确认按钮
+                document.getElementById(`confirmBtn${index}`).style.display = 'none';
+                // 显示重拍按钮
+                document.getElementById(`retakeBtn${index}`).style.display = 'block';
+                
+                // 显示成功提示
+                alert('照片已保存');
+            }
         }
     </script>
 </body>
