@@ -465,7 +465,7 @@
                 previewImg.src = photoData[`photo${index}`];
                 modal.classList.add('active');
             } else {
-                showToast();
+                showToast('请先上传图片');
             }
         }
 
@@ -540,10 +540,10 @@
                             // 保存完整的图片数据到 localStorage
                             localStorage.setItem(`partsPhoto_photo${i}`, photoData[`photo${i}`]);
                             console.log(`保存照片 ${i} 成功`);
-                            alert('照片已保存');
+                            showToast('照片已保存');
                         } catch (e) {
                             console.error('保存照片状态时出错:', e);
-                            alert('保存照片失败，请重试');
+                            showToast('保存照片失败，请重试');
                         }
                     };
 
@@ -558,8 +558,9 @@
         }
 
         // 显示提示信息
-        function showToast() {
+        function showToast(message) {
             const toast = document.getElementById('toast');
+            toast.textContent = message;  // 设置提示文字
             toast.classList.add('show');
             setTimeout(() => {
                 toast.classList.remove('show');

@@ -236,12 +236,34 @@
                 for (let i = 1; i <= 16; i++) {
                     const photoData = localStorage.getItem(`partsPhoto_photo${i}`);
                     if (photoData) {
-                        console.log(`读取到照片 ${i} 的数据`);
+                        console.log(`读取到零件照片 ${i} 的数据`);
                         partsPhotos[`photo${i}`] = photoData;
                     }
                 }
-                const packagingPhotos = JSON.parse(sessionStorage.getItem('packagingPhotos') || '{}');
-                const assemblyPhotos = JSON.parse(sessionStorage.getItem('assemblyPhotos') || '{}');
+
+                // 获取包装照片数据
+                let packagingPhotos = {};
+                try {
+                    const packagingData = sessionStorage.getItem('packagingPhotos');
+                    if (packagingData) {
+                        packagingPhotos = JSON.parse(packagingData);
+                        console.log('读取到包装照片数据');
+                    }
+                } catch (e) {
+                    console.error('解析包装照片数据出错:', e);
+                }
+
+                // 获取组装照片数据
+                let assemblyPhotos = {};
+                try {
+                    const assemblyData = sessionStorage.getItem('assemblyPhotos');
+                    if (assemblyData) {
+                        assemblyPhotos = JSON.parse(assemblyData);
+                        console.log('读取到组装照片数据');
+                    }
+                } catch (e) {
+                    console.error('解析组装照片数据出错:', e);
+                }
 
                 // 添加调试信息
                 console.log('存储的照片数据:', Object.keys(partsPhotos).length);
@@ -320,6 +342,7 @@
 
                 // 添加包装照片标题和照片
                 if (Object.keys(packagingPhotos).length > 0) {
+                    console.log('包装照片数量:', Object.keys(packagingPhotos).length);
                     children.push(
                         new Paragraph({
                             children: [
@@ -333,8 +356,10 @@
                         })
                     );
 
+                    console.log('正在处理包装照片...');
                     for (let i = 1; i <= 9; i++) {
                         if (packagingPhotos[`photo${i}`]) {
+                            console.log(`处理包装照片 ${i}`);
                             try {
                                 // 添加照片标题
                                 const titles = [
@@ -355,7 +380,15 @@
                                     })
                                 );
 
-                                const imageBase64 = packagingPhotos[`photo${i}`].split(',')[1];
+                                // 确保图片数据格式正确
+                                let imageData = packagingPhotos[`photo${i}`];
+                                if (typeof imageData === 'object') {
+                                    imageData = imageData.data || imageData.src || imageData;
+                                }
+                                console.log(`包装照片 ${i} 数据类型:`, typeof imageData);
+
+                                const compressedImage = await compressImage(imageData);
+                                const imageBase64 = compressedImage.split(',')[1];
                                 const buffer = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
                                 
                                 children.push(
@@ -373,15 +406,57 @@
                                     })
                                 );
                             } catch (e) {
-                                console.error('处理图片时出错:', e);
+                                console.error(`处理包装照片 ${i} 时出错:`, e);
                             }
                         }
                     }
                 }
 
-                // 添加组装照片标题和照片
+                // 处理组装照片
                 if (Object.keys(assemblyPhotos).length > 0) {
-                    // ... 类似的处理组装照片 ...
+                    console.log('正在处理组装照片...');
+                    // 添加组装照片标题
+                    children.push(
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: "组装照片",
+                                    bold: true,
+                                    size: 24
+                                })
+                            ],
+                            spacing: { before: 200, after: 100 }
+                        })
+                    );
+
+                    // 处理每张组装照片
+                    for (let i = 1; i <= 9; i++) {
+                        if (assemblyPhotos[`photo${i}`]) {
+                            console.log(`处理组装照片 ${i}`);
+                            try {
+                                const compressedImage = await compressImage(assemblyPhotos[`photo${i}`]);
+                                const imageBase64 = compressedImage.split(',')[1];
+                                const buffer = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
+                                
+                                children.push(
+                                    new Paragraph({
+                                        children: [
+                                            new ImageRun({
+                                                data: buffer,
+                                                transformation: {
+                                                    width: 400,
+                                                    height: 300
+                                                }
+                                            })
+                                        ],
+                                        spacing: { after: 200 }
+                                    })
+                                );
+                            } catch (e) {
+                                console.error(`处理组装照片 ${i} 时出错:`, e);
+                            }
+                        }
+                    }
                 }
 
                 // 创建文档
@@ -395,6 +470,7 @@
                 // 生成并保存文档
                 Packer.toBlob(doc).then(blob => {
                     saveAs(blob, "货架验收照片记录.docx");
+                    console.log('文档生成完成');
                 });
             } catch (error) {
                 console.error('生成文档时出错:', error);
