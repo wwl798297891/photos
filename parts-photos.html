@@ -507,14 +507,15 @@
                             // 保存完整的图片数据到 localStorage
                             localStorage.setItem(`partsPhoto_photo${i}`, photoData[`photo${i}`]);
                             console.log(`保存照片 ${i} 成功`);
+                            alert('照片已保存');
                         } catch (e) {
                             console.error('保存照片状态时出错:', e);
+                            alert('保存照片失败，请重试');
                         }
                     };
 
                     reader.readAsDataURL(file);
                 }
-                this.value = '';
             });
         }
 
@@ -534,24 +535,7 @@
 
         // 在照片确认按钮的点击处理函数中
         function confirmPhoto(index) {
-            // 阻止默认行为
-            event.preventDefault();
-            
-            const canvas = document.getElementById(`canvas${index}`);
-            if (canvas) {
-                // 获取图片数据
-                const imageData = canvas.toDataURL('image/jpeg');
-                // 保存到 localStorage
-                localStorage.setItem(`partsPhoto_photo${index}`, imageData);
-                
-                // 隐藏确认按钮
-                document.getElementById(`confirmBtn${index}`).style.display = 'none';
-                // 显示重拍按钮
-                document.getElementById(`retakeBtn${index}`).style.display = 'block';
-                
-                // 显示成功提示
-                alert('照片已保存');
-            }
+            // 移除这个函数，因为我们不再使用它
         }
     </script>
 </body>
