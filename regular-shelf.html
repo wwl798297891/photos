@@ -198,7 +198,7 @@
                 const partsPhotos = {};
                 // 从 localStorage 中获取每张照片的数据
                 for (let i = 1; i <= 16; i++) {
-                    const photoData = localStorage.getItem(`partsPhoto_${i}`);
+                    const photoData = localStorage.getItem(`partsPhoto_photo${i}`);
                     if (photoData) {
                         partsPhotos[`photo${i}`] = photoData;
                     }
@@ -248,8 +248,7 @@
                                     })
                                 );
 
-                                const photoData = JSON.parse(partsPhotos[`photo${i}`]);
-                                const imageBase64 = photoData[`photo${i}`].split(',')[1];
+                                const imageBase64 = partsPhotos[`photo${i}`].split(',')[1];
                                 const buffer = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
                                 
                                 children.push(
