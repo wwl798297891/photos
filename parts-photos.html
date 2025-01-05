@@ -561,24 +561,35 @@
                     const reader = new FileReader();
 
                     reader.onload = async function(e) {
-                        // 压缩图片
-                        const compressedImage = await compressImage(e.target.result);
-                        // 确保图片数据是 base64 格式
-                        const imageData = compressedImage;
-                        if (!imageData.startsWith('data:image')) {
-                            photoData[`photo${i}`] = 'data:image/jpeg;base64,' + imageData;
-                        } else {
-                            photoData[`photo${i}`] = imageData;
-                        }
-                        checkbox.checked = true;
                         try {
-                            // 保存完整的图片数据到 localStorage
-                            localStorage.setItem(`partsPhoto_photo${i}`, photoData[`photo${i}`]);
-                            console.log(`保存照片 ${i} 成功`);
-                            showToast('照片已保存');
+                            // 压缩图片
+                            const compressedImage = await compressImage(e.target.result);
+                            // 清除原始数据以释放内存
+                            reader = null;
+                            e.target.result = null;
+                            
+                            // 确保图片数据是 base64 格式
+                            const imageData = compressedImage;
+                            if (!imageData.startsWith('data:image')) {
+                                photoData[`photo${i}`] = 'data:image/jpeg;base64,' + imageData;
+                            } else {
+                                photoData[`photo${i}`] = imageData;
+                            }
+                            checkbox.checked = true;
+                            try {
+                                // 保存完整的图片数据到 localStorage
+                                localStorage.setItem(`partsPhoto_photo${i}`, photoData[`photo${i}`]);
+                                console.log(`保存照片 ${i} 成功`);
+                                showToast('照片已保存');
+                                // 添加延时以确保数据保存完成
+                                await new Promise(resolve => setTimeout(resolve, 100));
+                            } catch (e) {
+                                console.error('保存照片状态时出错:', e);
+                                showToast('保存照片失败，请重试');
+                            }
                         } catch (e) {
-                            console.error('保存照片状态时出错:', e);
-                            showToast('保存照片失败，请重试');
+                            console.error('处理照片时出错:', e);
+                            showToast('处理照片失败，请重试');
                         }
                     };
 
