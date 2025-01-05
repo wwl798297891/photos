@@ -484,19 +484,52 @@
             photo13: null, photo14: null, photo15: null, photo16: null  // 拉撑组
         };
 
+        // 添加图片压缩函数
+        async function compressImage(base64, quality = 0.6, maxSize = 800) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = base64;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // 如果图片尺寸超过最大值，等比例缩小
+                    if (width > maxSize || height > maxSize) {
+                        if (width > height) {
+                            height = (height / width) * maxSize;
+                            width = maxSize;
+                        } else {
+                            width = (width / height) * maxSize;
+                            height = maxSize;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+            });
+        }
+
         // 为每个文件输入添加监听器
         for (let i = 1; i <= 16; i++) {
             const input = document.getElementById(`photoInput${i}`);
             const checkbox = document.getElementById(`auto${i}`);
 
-            input.addEventListener('change', function(e) {
+            input.addEventListener('change', async function(e) {
                 if (e.target.files && e.target.files[0]) {
                     const file = e.target.files[0];
                     const reader = new FileReader();
 
-                    reader.onload = function(e) {
+                    reader.onload = async function(e) {
+                        // 压缩图片
+                        const compressedImage = await compressImage(e.target.result);
                         // 确保图片数据是 base64 格式
-                        const imageData = e.target.result;
+                        const imageData = compressedImage;
                         if (!imageData.startsWith('data:image')) {
                             photoData[`photo${i}`] = 'data:image/jpeg;base64,' + imageData;
                         } else {
