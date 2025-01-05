@@ -290,6 +290,17 @@
                             })
                         ],
                         spacing: { after: 200 }
+                    }),
+                    // 添加订单号
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: `订单号：${orderNumber}`,
+                                bold: true,
+                                size: 24
+                            })
+                        ],
+                        spacing: { before: 100, after: 200 }
                     })
                 ];
 

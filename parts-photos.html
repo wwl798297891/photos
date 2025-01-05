@@ -188,6 +188,39 @@
                 height: 20px;
             }
         }
+
+        .complete-button {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            padding: 8px 16px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            z-index: 101;
+            transition: all 0.2s;
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
+            height: 32px;
+            line-height: 16px;
+        }
+
+        .complete-button:active {
+            transform: scale(0.98);
+            background: #096dd9;
+        }
+
+        @media (max-width: 480px) {
+            .complete-button {
+                top: 12px;
+                right: 12px;
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -440,6 +473,8 @@
         </div>
     </main>
 
+    <button class="complete-button" onclick="handleComplete()">完成</button>
+
     <script>
         // 添加返回处理函数
         function handleBack() {
@@ -570,6 +605,23 @@
         // 在照片确认按钮的点击处理函数中
         function confirmPhoto(index) {
             // 移除这个函数，因为我们不再使用它
+        }
+
+        // 添加完成按钮处理函数
+        function handleComplete() {
+            try {
+                // 保存所有照片数据
+                Object.keys(photoData).forEach(key => {
+                    if (photoData[key]) {
+                        localStorage.setItem(`partsPhoto_${key}`, photoData[key]);
+                    }
+                });
+                // 返回上一页
+                history.back();
+            } catch (e) {
+                console.error('保存数据时出错:', e);
+                history.back();
+            }
         }
     </script>
 </body>
