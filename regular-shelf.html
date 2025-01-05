@@ -178,6 +178,10 @@
     <script>
         async function generateWordDoc() {
             try {
+                // 先检查存储状态
+                console.log('当前 localStorage 中的所有键:', Object.keys(localStorage));
+                console.log('当前 sessionStorage 中的所有键:', Object.keys(sessionStorage));
+
                 const { Document, Packer, Paragraph, TextRun, ImageRun } = docx;
 
                 // 创建文档内容数组
@@ -205,6 +209,14 @@
                 }
                 const packagingPhotos = JSON.parse(sessionStorage.getItem('packagingPhotos') || '{}');
                 const assemblyPhotos = JSON.parse(sessionStorage.getItem('assemblyPhotos') || '{}');
+
+                // 添加调试信息
+                console.log('存储的照片数据:', Object.keys(partsPhotos).length);
+                for (let i = 1; i <= 16; i++) {
+                    if (partsPhotos[`photo${i}`]) {
+                        console.log(`找到照片 ${i}`);
+                    }
+                }
 
                 // 添加零件照片标题
                 if (Object.keys(partsPhotos).length > 0) {
