@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>常规货架</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background-color: #1890ff;
+            color: white;
+            padding: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            color: white;
+            padding: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .header h1 {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 500;
+            text-align: center;
+            margin-right: 32px; /* 补偿返回按钮的宽度，保持标题居中 */
+        }
+
+        .container {
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .search-box {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #1890ff;
+            box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+        }
+
+        .search-input::placeholder {
+            color: #bfbfbf;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin: 24px -8px 0; /* 使用负边距来抵消内部的padding */
+        }
+
+        .action-buttons-left {
+            flex: 3;
+            padding: 0 8px;
+        }
+
+        .action-buttons-right {
+            flex: 2;
+            padding: 0 8px;
+        }
+
+        .action-button {
+            display: block;
+            width: 100%;
+            margin-bottom: 12px;
+            padding: 12px 8px;
+            border: none;
+            border-radius: 4px;
+            background: #1890ff;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-button:last-child {
+            margin-bottom: 0;
+        }
+
+        .action-button:active {
+            transform: scale(0.98);
+            background: #096dd9;
+        }
+
+        @media (max-width: 480px) {
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .action-buttons-left,
+            .action-buttons-right {
+                width: 100%;
+                margin-bottom: 12px;
+            }
+            
+            .action-buttons-right:last-child {
+                margin-bottom: 0;
+            }
+
+            .container {
+                padding: 12px;
+            }
+
+            .photo-button {
+                padding: 16px 8px;  /* 增大按钮点击区域 */
+            }
+
+            .checkbox-wrapper {
+                font-size: 12px;
+            }
+
+            .checkbox-wrapper input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+            }
+        }
+    </style>
+    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+    <header class="header">
+        <button class="back-button" onclick="history.back()">←</button>
+        <h1>常规货架</h1>
+    </header>
+
+    <main class="container">
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="订单号">
+        </div>
+
+        <div class="action-buttons">
+            <div class="action-buttons-left">
+                <button class="action-button" onclick="location.href='./parts-photos.html'">零件照片</button>
+                <button class="action-button" onclick="location.href='./packaging-photos.html'">包装照片</button>
+                <button class="action-button" onclick="location.href='./assembly-photos.html'">组装照片</button>
+            </div>
+            <div class="action-buttons-right">
+                <button class="action-button" onclick="generateWordDoc()">保存到word</button>
+                <button class="action-button">上传至服务器</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function generateWordDoc() {
+            try {
+                const { Document, Packer, Paragraph, TextRun, ImageRun } = docx;
+
+                // 创建文档内容数组
+                const children = [
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "货架验收照片记录",
+                                bold: true,
+                                size: 32
+                            })
+                        ],
+                        spacing: { after: 200 }
+                    })
+                ];
+
+                // 获取照片数据
+                const partsPhotos = {};
+                // 从 localStorage 中获取每张照片的数据
+                for (let i = 1; i <= 16; i++) {
+                    const photoData = localStorage.getItem(`partsPhoto_photo${i}`);
+                    if (photoData) {
+                        partsPhotos[`photo${i}`] = photoData;
+                    }
+                }
+                const packagingPhotos = JSON.parse(sessionStorage.getItem('packagingPhotos') || '{}');
+                const assemblyPhotos = JSON.parse(sessionStorage.getItem('assemblyPhotos') || '{}');
+
+                // 添加零件照片标题
+                if (Object.keys(partsPhotos).length > 0) {
+                    children.push(
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: "零件照片",
+                                    bold: true,
+                                    size: 24
+                                })
+                            ],
+                            spacing: { before: 200, after: 100 }
+                        })
+                    );
+                }
+
+                // 处理照片
+                if (Object.keys(partsPhotos).length > 0) {
+                    for (let i = 1; i <= 16; i++) {
+                        if (partsPhotos[`photo${i}`]) {
+                            try {
+                                // 添加照片标题
+                                const photoTitle = (() => {
+                                    if (i <= 4) return ['立柱', ['厚度拍照', '长度拍照', '数量拍照', '所有整体长度'][i-1]];
+                                    if (i <= 8) return ['长撑', ['厚度拍照', '长度拍照', '数量拍照', '所有整体长度'][i-5]];
+                                    if (i <= 12) return ['短撑', ['厚度拍照', '长度拍照', '数量拍照', '所有整体长度'][i-9]];
+                                    return ['拉撑', ['厚度拍照', '长度拍照', '数量拍照', '所有整体长度'][i-13]];
+                                })();
+
+                                children.push(
+                                    new Paragraph({
+                                        children: [
+                                            new TextRun({
+                                                text: `${photoTitle[0]} - ${photoTitle[1]}`,
+                                                bold: true,
+                                                size: 20
+                                            })
+                                        ],
+                                        spacing: { before: 100, after: 50 }
+                                    })
+                                );
+
+                                const imageBase64 = partsPhotos[`photo${i}`].split(',')[1];
+                                const buffer = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
+                                
+                                children.push(
+                                    new Paragraph({
+                                        children: [
+                                            new ImageRun({
+                                                data: buffer,
+                                                transformation: {
+                                                    // 保持原始图片比例
+                                                    width: 600,
+                                                    height: 800,
+                                                    rotation: 0,
+                                                    flip: {
+                                                        horizontal: false,
+                                                        vertical: false
+                                                    }
+                                                }
+                                            })
+                                        ],
+                                        spacing: { after: 200 }
+                                    })
+                                );
+                            } catch (e) {
+                                console.error('处理图片时出错:', e);
+                            }
+                        }
+                    }
+                }
+
+                // 添加包装照片标题和照片
+                if (Object.keys(packagingPhotos).length > 0) {
+                    children.push(
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: "包装照片",
+                                    bold: true,
+                                    size: 24
+                                })
+                            ],
+                            spacing: { before: 200, after: 100 }
+                        })
+                    );
+
+                    for (let i = 1; i <= 9; i++) {
+                        if (packagingPhotos[`photo${i}`]) {
+                            try {
+                                // 添加照片标题
+                                const titles = [
+                                    '纸箱照片', '零件盒零件数量', '铁网木板数量', 
+                                    '包材照片', '说明书位置', 
+                                    '其他照片1', '其他照片2', '其他照片3', '其他照片4'
+                                ];
+                                children.push(
+                                    new Paragraph({
+                                        children: [
+                                            new TextRun({
+                                                text: titles[i-1],
+                                                bold: true,
+                                                size: 20
+                                            })
+                                        ],
+                                        spacing: { before: 100, after: 50 }
+                                    })
+                                );
+
+                                const imageBase64 = packagingPhotos[`photo${i}`].split(',')[1];
+                                const buffer = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
+                                
+                                children.push(
+                                    new Paragraph({
+                                        children: [
+                                            new ImageRun({
+                                                data: buffer,
+                                                transformation: {
+                                                    // 保持原始图片比例
+                                                    width: 600,
+                                                    height: 800,
+                                                    rotation: 0,
+                                                    flip: {
+                                                        horizontal: false,
+                                                        vertical: false
+                                                    }
+                                                }
+                                            })
+                                        ],
+                                        spacing: { after: 200 }
+                                    })
+                                );
+                            } catch (e) {
+                                console.error('处理图片时出错:', e);
+                            }
+                        }
+                    }
+                }
+
+                // 添加组装照片标题和照片
+                if (Object.keys(assemblyPhotos).length > 0) {
+                    // ... 类似的处理组装照片 ...
+                }
+
+                // 创建文档
+                const doc = new Document({
+                    sections: [{
+                        properties: {},
+                        children: children
+                    }]
+                });
+
+                // 生成并保存文档
+                Packer.toBlob(doc).then(blob => {
+                    saveAs(blob, "货架验收照片记录.docx");
+                });
+            } catch (error) {
+                console.error('生成文档时出错:', error);
+                alert('生成文档时出错，请稍后重试');
+            }
+        }
+    </script>
+</body>
+</html> 

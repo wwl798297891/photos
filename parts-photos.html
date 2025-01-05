@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>零件照片</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background-color: #1890ff;
+            color: white;
+            padding: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            color: white;
+            padding: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .header h1 {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 500;
+            text-align: center;
+            margin-right: 32px;
+        }
+
+        .container {
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .photo-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .button-group {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+        }
+
+        .photo-button {
+            padding: 12px 8px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .button-group .photo-button:first-child {
+            flex: 2;
+        }
+
+        .button-group .photo-button:not(:first-child) {
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .photo-button:active {
+            transform: scale(0.98);
+            background: #096dd9;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .preview-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .preview-modal.active {
+            display: flex;
+        }
+
+        .preview-content {
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .preview-content img {
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+        }
+
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 12px;
+            }
+
+            .photo-row {
+                padding: 12px;
+            }
+
+            .button-group {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .button-group .photo-button {
+                width: 100%;
+                padding: 16px 8px;
+            }
+
+            .button-group .photo-button:not(:first-child) {
+                min-width: unset;
+            }
+
+            .checkbox-wrapper {
+                font-size: 12px;
+            }
+
+            .checkbox-wrapper input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-modal" id="previewModal" onclick="closePreview()">
+        <div class="preview-content">
+            <img id="previewImage" src="" alt="预览图片">
+        </div>
+    </div>
+
+    <div class="toast" id="toast">请先上传图片</div>
+
+    <header class="header">
+        <button class="back-button" onclick="handleBack()">←</button>
+        <h1>零件照片</h1>
+    </header>
+
+    <main class="container">
+        <div class="photo-rows">
+            <!-- 立柱组 -->
+            <h2 style="margin: 20px 0 10px; color: #666;">立柱</h2>
+            <!-- 第1行 -->
+            <input type="file" class="hidden" id="photoInput1" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput1').click()">厚度拍照</button>
+                    <button class="photo-button" onclick="handleView(1)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(1)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto1">
+                    <label for="auto1">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 第2行 -->
+            <input type="file" class="hidden" id="photoInput2" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput2').click()">长度拍照</button>
+                    <button class="photo-button" onclick="handleView(2)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(2)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto2">
+                    <label for="auto2">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 第3行 -->
+            <input type="file" class="hidden" id="photoInput3" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput3').click()">数量拍照</button>
+                    <button class="photo-button" onclick="handleView(3)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(3)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto3">
+                    <label for="auto3">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 第4行 -->
+            <input type="file" class="hidden" id="photoInput4" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput4').click()">所有整体长度</button>
+                    <button class="photo-button" onclick="handleView(4)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(4)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto4">
+                    <label for="auto4">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 长撑组 -->
+            <h2 style="margin: 20px 0 10px; color: #666;">长撑</h2>
+            <!-- 第5-8行 -->
+            <input type="file" class="hidden" id="photoInput5" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput5').click()">厚度拍照</button>
+                    <button class="photo-button" onclick="handleView(5)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(5)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto5">
+                    <label for="auto5">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 第6行 -->
+            <input type="file" class="hidden" id="photoInput6" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput6').click()">长度拍照</button>
+                    <button class="photo-button" onclick="handleView(6)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(6)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto6">
+                    <label for="auto6">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 第7行 -->
+            <input type="file" class="hidden" id="photoInput7" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput7').click()">数量拍照</button>
+                    <button class="photo-button" onclick="handleView(7)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(7)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto7">
+                    <label for="auto7">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 第8行 -->
+            <input type="file" class="hidden" id="photoInput8" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput8').click()">所有整体长度</button>
+                    <button class="photo-button" onclick="handleView(8)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(8)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto8">
+                    <label for="auto8">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 短撑组 -->
+            <h2 style="margin: 20px 0 10px; color: #666;">短撑</h2>
+            <!-- 第9-12行 -->
+            <input type="file" class="hidden" id="photoInput9" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput9').click()">厚度拍照</button>
+                    <button class="photo-button" onclick="handleView(9)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(9)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto9">
+                    <label for="auto9">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 第10行 -->
+            <input type="file" class="hidden" id="photoInput10" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput10').click()">长度拍照</button>
+                    <button class="photo-button" onclick="handleView(10)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(10)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto10">
+                    <label for="auto10">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 第11行 -->
+            <input type="file" class="hidden" id="photoInput11" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput11').click()">数量拍照</button>
+                    <button class="photo-button" onclick="handleView(11)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(11)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto11">
+                    <label for="auto11">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 第12行 -->
+            <input type="file" class="hidden" id="photoInput12" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput12').click()">所有整体长度</button>
+                    <button class="photo-button" onclick="handleView(12)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(12)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto12">
+                    <label for="auto12">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 拉撑组 -->
+            <h2 style="margin: 20px 0 10px; color: #666;">拉撑</h2>
+            <!-- 第13-16行 -->
+            <input type="file" class="hidden" id="photoInput13" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput13').click()">厚度拍照</button>
+                    <button class="photo-button" onclick="handleView(13)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(13)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto13">
+                    <label for="auto13">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 第14行 -->
+            <input type="file" class="hidden" id="photoInput14" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput14').click()">长度拍照</button>
+                    <button class="photo-button" onclick="handleView(14)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(14)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto14">
+                    <label for="auto14">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 第15行 -->
+            <input type="file" class="hidden" id="photoInput15" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput15').click()">数量拍照</button>
+                    <button class="photo-button" onclick="handleView(15)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(15)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto15">
+                    <label for="auto15">拍照后自动打勾</label>
+                </div>
+            </div>
+
+            <!-- 第16行 -->
+            <input type="file" class="hidden" id="photoInput16" accept="image/*">
+            <div class="photo-row">
+                <div class="button-group">
+                    <button class="photo-button" onclick="document.getElementById('photoInput16').click()">所有整体长度</button>
+                    <button class="photo-button" onclick="handleView(16)">查看</button>
+                    <button class="photo-button" onclick="handleDelete(16)">删除</button>
+                </div>
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="auto16">
+                    <label for="auto16">拍照后自动打勾</label>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 添加返回处理函数
+        function handleBack() {
+            try {
+                // 保存完整的图片数据
+                Object.keys(photoData).forEach(key => {
+                    if (photoData[key]) {
+                        localStorage.setItem(`partsPhoto_${key}`, photoData[key]);
+                    }
+                });
+                history.back();
+            } catch (e) {
+                console.error('保存数据时出错:', e);
+                history.back();
+            }
+        }
+
+        // 处理查看按钮点击
+        function handleView(index) {
+            if (photoData[`photo${index}`]) {
+                const modal = document.getElementById('previewModal');
+                const previewImg = document.getElementById('previewImage');
+                previewImg.src = photoData[`photo${index}`];
+                modal.classList.add('active');
+            } else {
+                showToast();
+            }
+        }
+
+        // 处理删除按钮点击
+        function handleDelete(index) {
+            photoData[`photo${index}`] = null;
+            const checkbox = document.getElementById(`auto${index}`);
+            checkbox.checked = false;
+        }
+
+        // 存储图片数据的对象
+        const photoData = {
+            photo1: null, photo2: null, photo3: null, photo4: null,  // 立柱组
+            photo5: null, photo6: null, photo7: null, photo8: null,  // 长撑组
+            photo9: null, photo10: null, photo11: null, photo12: null,  // 短撑组
+            photo13: null, photo14: null, photo15: null, photo16: null  // 拉撑组
+        };
+
+        // 为每个文件输入添加监听器
+        for (let i = 1; i <= 16; i++) {
+            const input = document.getElementById(`photoInput${i}`);
+            const checkbox = document.getElementById(`auto${i}`);
+
+            input.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+
+                    reader.onload = function(e) {
+                        photoData[`photo${i}`] = e.target.result;
+                        checkbox.checked = true;
+                        try {
+                            // 保存完整的图片数据到 localStorage
+                            localStorage.setItem(`partsPhoto_photo${i}`, e.target.result);
+                        } catch (e) {
+                            console.error('保存照片状态时出错:', e);
+                        }
+                    };
+
+                    reader.readAsDataURL(file);
+                }
+                this.value = '';
+            });
+        }
+
+        // 关闭预览
+        function closePreview() {
+            document.getElementById('previewModal').classList.remove('active');
+        }
+
+        // 显示提示信息
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+    </script>
+</body>
+</html> 
