@@ -106,6 +106,16 @@
             transition: all 0.2s;
         }
 
+        .action-button:disabled {
+            background: #bfbfbf;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .action-button:disabled:active {
+            transform: none;
+        }
+
         .action-button:last-child {
             margin-bottom: 0;
         }
@@ -147,11 +157,32 @@
                 height: 20px;
             }
         }
+
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
     </style>
     <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
 <body>
+    <div class="toast" id="toast">请先填写订单号</div>
+
     <header class="header">
         <button class="back-button" onclick="history.back()">←</button>
         <h1>常规货架</h1>
@@ -159,24 +190,56 @@
 
     <main class="container">
         <div class="search-box">
-            <input type="text" class="search-input" placeholder="订单号">
+            <input type="text" class="search-input" id="orderNumber" placeholder="订单号（必填）" required>
         </div>
 
         <div class="action-buttons">
             <div class="action-buttons-left">
-                <button class="action-button" onclick="location.href='./parts-photos.html'">零件照片</button>
-                <button class="action-button" onclick="location.href='./packaging-photos.html'">包装照片</button>
-                <button class="action-button" onclick="location.href='./assembly-photos.html'">组装照片</button>
+                <button class="action-button" onclick="checkOrderAndNavigate('./parts-photos.html')">零件照片</button>
+                <button class="action-button" onclick="checkOrderAndNavigate('./packaging-photos.html')">包装照片</button>
+                <button class="action-button" onclick="checkOrderAndNavigate('./assembly-photos.html')">组装照片</button>
             </div>
             <div class="action-buttons-right">
-                <button class="action-button" onclick="generateWordDoc()">保存到word</button>
-                <button class="action-button">上传至服务器</button>
+                <button class="action-button" onclick="checkOrderAndGenerateDoc()">保存到word</button>
+                <button class="action-button" disabled>上传至服务器</button>
             </div>
         </div>
     </main>
 
     <script>
-        async function generateWordDoc() {
+        // 显示提示信息
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // 检查订单号并跳转
+        function checkOrderAndNavigate(url) {
+            const orderNumber = document.getElementById('orderNumber').value.trim();
+            if (!orderNumber) {
+                showToast('请先填写订单号');
+                return;
+            }
+            // 保存订单号到 sessionStorage
+            sessionStorage.setItem('orderNumber', orderNumber);
+            location.href = url;
+        }
+
+        // 检查订单号并生成文档
+        function checkOrderAndGenerateDoc() {
+            const orderNumber = document.getElementById('orderNumber').value.trim();
+            if (!orderNumber) {
+                showToast('请先填写订单号');
+                return;
+            }
+            generateWordDoc(orderNumber);
+        }
+
+        async function generateWordDoc(orderNumber) {
             try {
                 // 先检查存储状态
                 console.log('当前 localStorage 中的所有键:', Object.keys(localStorage));
@@ -469,12 +532,20 @@
 
                 // 生成并保存文档
                 Packer.toBlob(doc).then(blob => {
-                    saveAs(blob, "货架验收照片记录.docx");
+                    saveAs(blob, `货架验收照片记录_${orderNumber}.docx`);
                     console.log('文档生成完成');
                 });
             } catch (error) {
                 console.error('生成文档时出错:', error);
                 alert('生成文档时出错，请稍后重试');
+            }
+        }
+
+        // 页面加载时恢复订单号
+        window.onload = function() {
+            const savedOrderNumber = sessionStorage.getItem('orderNumber');
+            if (savedOrderNumber) {
+                document.getElementById('orderNumber').value = savedOrderNumber;
             }
         }
     </script>
