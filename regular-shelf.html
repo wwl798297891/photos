@@ -543,8 +543,28 @@
 
                 // 生成并保存文档
                 Packer.toBlob(doc).then(blob => {
-                    saveAs(blob, `货架验收照片记录_${orderNumber}.docx`);
+                    // 检查是否是移动端
+                    if (/Android|iPhone/i.test(navigator.userAgent)) {
+                        // 创建临时下载链接
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        // 使用简单的文件名，避免特殊字符
+                        const fileName = `record_${orderNumber}.docx`;
+                        link.download = fileName;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(url);
+                        showToast('文档生成完成');
+                    } else {
+                        // PC端使用原有的保存方式
+                        saveAs(blob, `货架验收照片记录_${orderNumber}.docx`);
+                    }
                     console.log('文档生成完成');
+                }).catch(error => {
+                    console.error('保存文档时出错:', error);
+                    showToast('保存文档失败，请重试');
                 });
             } catch (error) {
                 console.error('生成文档时出错:', error);

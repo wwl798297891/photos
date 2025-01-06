@@ -578,6 +578,19 @@
                         try {
                             // 压缩图片
                             const compressedImage = await compressImage(e.target.result);
+                            // 检查是否是移动端
+                            if (/Android|iPhone/i.test(navigator.userAgent)) {
+                                // 使用更简单的文件名格式
+                                const fileName = `parts_photo_${i}.jpg`;
+                                // 创建临时下载链接
+                                const url = compressedImage;
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = fileName;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            }
                             // 使用局部变量存储结果
                             const result = compressedImage;
                             
