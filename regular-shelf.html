@@ -543,30 +543,25 @@
 
                 // 生成并保存文档
                 Packer.toBlob(doc).then(blob => {
-                    // 创建一个新的 Blob，指定 MIME 类型
-                    const wordBlob = new Blob([blob], { 
-                        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
-                    });
+                    try {
+                        // 检查是否是移动端百度浏览器
+                        const isBaiduBrowser = /baiduboxapp/i.test(navigator.userAgent);
+                        
+                        if (isBaiduBrowser) {
+                            // 对于百度浏览器，使用 FileSaver，但简化文件名
+                            const simpleFileName = `${orderNumber}.docx`;
+                            saveAs(blob, simpleFileName);
+                        } else {
+                            // 其他浏览器使用标准方式
+                            const fileName = `货架验收照片记录_${orderNumber}.docx`;
+                            saveAs(blob, fileName);
+                        }
+                        showToast('文档生成完成');
+                    } catch (e) {
+                        console.error('保存文件时出错:', e);
+                        showToast('保存失败，请重试');
+                    }
 
-                    // 使用中文文件名可能导致问题，所以使用英文+数字的组合
-                    const fileName = `ShelfRecord_${orderNumber}.docx`;
-
-                    // 尝试使用 download 属性
-                    const link = document.createElement('a');
-                    link.href = window.URL.createObjectURL(wordBlob);
-                    link.download = fileName;
-                    
-                    // 添加到文档中并触发点击
-                    document.body.appendChild(link);
-                    link.click();
-                    
-                    // 清理
-                    setTimeout(() => {
-                        document.body.removeChild(link);
-                        window.URL.revokeObjectURL(link.href);
-                    }, 100);
-
-                    showToast('文档生成完成');
                     console.log('文档生成完成');
                 }).catch(error => {
                     console.error('保存文档时出错:', error);
