@@ -179,6 +179,20 @@
     </style>
     <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script>
+        // 全局错误处理
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('Error: ' + msg + '\nurl: ' + url + '\nline: ' + line);
+            showToast('操作出错，请重试');
+            return false;
+        };
+
+        // 未捕获的 Promise 错误处理
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled promise rejection:', event.reason);
+            showToast('操作失败，请重试');
+        });
+    </script>
 </head>
 <body>
     <div class="toast" id="toast">请先填写订单号</div>
@@ -285,7 +299,7 @@
                                 const ctx = canvas.getContext('2d');
                                 
                                 // 保持原始比例，只限制最大宽度
-                                const maxWidth = 1200;
+                                const maxWidth = 800;
                                 let width = img.width;
                                 let height = img.height;
                                 
@@ -298,7 +312,7 @@
                                 canvas.height = height;
                                 ctx.drawImage(img, 0, 0, width, height);
                                 resolve({
-                                    data: canvas.toDataURL('image/jpeg', 0.7),
+                                    data: canvas.toDataURL('image/jpeg', 0.6),
                                     width: img.width,
                                     height: img.height
                                 });
@@ -582,25 +596,33 @@
                             throw new Error('生成的文档无效');
                         }
 
-                        // 创建 Blob URL
+                        // 如果文件较大，可以考虑分块下载
+                        const chunkSize = 1024 * 1024; // 1MB chunks
+                        const chunks = Math.ceil(blob.size / chunkSize);
+
+                        // 针对移动端浏览器的特殊处理
+                        if (/mobile/i.test(navigator.userAgent)) {
+                            // 使用 FileSaver.js 保存文件
+                            saveAs(blob, `${orderNumber}.docx`);
+                            showToast('文档已生成');
+                            return;
+                        }
+
+                        // 桌面端浏览器使用传统方式
                         const url = window.URL.createObjectURL(blob);
-                        
-                        // 创建临时下载链接
                         const link = document.createElement('a');
                         link.href = url;
                         link.download = `${orderNumber}.docx`;
-                        
-                        // 触发点击前添加到文档
                         document.body.appendChild(link);
                         
-                        // 使用 setTimeout 确保链接已添加
                         setTimeout(() => {
                             try {
                                 link.click();
                                 showToast('文档已生成');
                             } catch (e) {
                                 console.error('触发下载时出错:', e);
-                                showToast('下载失败，请重试');
+                                // 如果传统方式失败，尝试使用 FileSaver
+                                saveAs(blob, `${orderNumber}.docx`);
                             }
                             
                             // 清理
