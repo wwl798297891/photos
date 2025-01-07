@@ -231,16 +231,25 @@
 
         // 检查订单号并生成文档
         function checkOrderAndGenerateDoc() {
+            // 显示加载提示
+            showToast('正在生成文档...');
+
             const orderNumber = document.getElementById('orderNumber').value.trim();
             if (!orderNumber) {
                 showToast('请先填写订单号');
                 return;
             }
-            generateWordDoc(orderNumber);
+            // 添加延时，确保 UI 响应
+            setTimeout(() => {
+                generateWordDoc(orderNumber);
+            }, 100);
         }
 
         async function generateWordDoc(orderNumber) {
             try {
+                // 显示处理提示
+                showToast('正在处理照片...');
+
                 // 先检查存储状态
                 console.log('当前 localStorage 中的所有键:', Object.keys(localStorage));
                 console.log('当前 sessionStorage 中的所有键:', Object.keys(sessionStorage));
@@ -544,40 +553,46 @@
                 // 生成并保存文档
                 Packer.toBlob(doc).then(blob => {
                     try {
+                        showToast('正在保存文档...');
+                        
                         // 创建 Blob URL
                         const url = window.URL.createObjectURL(blob);
                         
                         // 创建临时下载链接
                         const link = document.createElement('a');
                         link.href = url;
-                        link.download = `${orderNumber}.docx`;  // 使用简单文件名
+                        link.download = `${orderNumber}.docx`;
                         
-                        // 将链接添加到文档
+                        // 触发点击前添加到文档
                         document.body.appendChild(link);
                         
-                        // 触发点击
-                        link.click();
-                        
-                        // 清理
+                        // 使用 setTimeout 确保链接已添加
                         setTimeout(() => {
-                            document.body.removeChild(link);
-                            window.URL.revokeObjectURL(url);
+                            try {
+                                link.click();
+                                showToast('文档已生成');
+                            } catch (e) {
+                                console.error('触发下载时出错:', e);
+                                showToast('下载失败，请重试');
+                            }
+                            
+                            // 清理
+                            setTimeout(() => {
+                                document.body.removeChild(link);
+                                window.URL.revokeObjectURL(url);
+                            }, 100);
                         }, 100);
-
-                        showToast('文档生成完成');
                     } catch (e) {
                         console.error('保存文件时出错:', e);
                         showToast('保存失败，请重试');
                     }
-
-                    console.log('文档生成完成');
                 }).catch(error => {
                     console.error('保存文档时出错:', error);
                     showToast('保存文档失败，请重试');
                 });
             } catch (error) {
                 console.error('生成文档时出错:', error);
-                alert('生成文档时出错，请稍后重试');
+                showToast('生成文档时出错，请稍后重试');
             }
         }
 
