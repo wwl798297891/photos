@@ -472,6 +472,90 @@
                 history.back();
             }
         }
+
+        // 修改照片拍摄和保存逻辑
+        function takePhoto(photoId) {
+            try {
+                showToast('正在处理...');
+                
+                const video = document.getElementById('camera');
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+
+                const maxSize = 1280;
+                let width = video.videoWidth;
+                let height = video.videoHeight;
+                
+                // 等比例缩放
+                if (width > height) {
+                    if (width > maxSize) {
+                        height = Math.round((height * maxSize) / width);
+                        width = maxSize;
+                    }
+                } else {
+                    if (height > maxSize) {
+                        width = Math.round((width * maxSize) / height);
+                        height = maxSize;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                context.drawImage(video, 0, 0, width, height);
+                
+                const photoData = canvas.toDataURL('image/jpeg', 0.5);
+                
+                // 清理 canvas
+                context.clearRect(0, 0, width, height);
+                canvas.width = 0;
+                canvas.height = 0;
+
+                // 更新照片数据
+                packagingPhotos[`photo${photoId}`] = photoData;
+                updatePhotoPreview(photoId);
+                savePhotos();
+                showToast('拍照成功');
+            } catch (e) {
+                console.error('拍照时出错:', e);
+                showToast('拍照失败，请重试');
+            }
+        }
+
+        // 添加资源清理代码
+        window.addEventListener('unload', function() {
+            try {
+                const video = document.getElementById('camera');
+                if (video && video.srcObject) {
+                    const tracks = video.srcObject.getTracks();
+                    tracks.forEach(track => track.stop());
+                }
+                
+                const canvases = document.getElementsByTagName('canvas');
+                for (let canvas of canvases) {
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    canvas.width = 0;
+                    canvas.height = 0;
+                }
+            } catch (e) {
+                console.error('清理资源时出错:', e);
+            }
+        });
+
+        // 添加页面可见性处理
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                const video = document.getElementById('camera');
+                if (video && video.srcObject) {
+                    video.pause();
+                }
+            } else {
+                const video = document.getElementById('camera');
+                if (video && video.srcObject) {
+                    video.play();
+                }
+            }
+        });
     </script>
 </body>
 </html> 
