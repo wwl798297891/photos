@@ -222,13 +222,19 @@
 
     <script>
         // 显示提示信息
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2000);
+        function showToast(message, duration = 2000) {
+            try {
+                const toast = document.getElementById('toast');
+                if (toast) {
+                    toast.textContent = message;
+                    toast.classList.add('show');
+                    setTimeout(() => {
+                        toast.classList.remove('show');
+                    }, duration);
+                }
+            } catch (e) {
+                console.error('显示提示信息时出错:', e);
+            }
         }
 
         // 检查订单号并跳转
@@ -289,12 +295,19 @@
                     return new Promise((resolve, reject) => {
                         try {
                             const img = new Image();
+                            
+                            // 添加错误处理
                             img.onerror = () => {
                                 console.error('图片加载失败');
-                                reject(new Error('图片加载失败'));
+                                // 返回原始图片数据而不是直接失败
+                                resolve({
+                                    data: base64,
+                                    width: 800,
+                                    height: 600
+                                });
                             };
 
-                            // 添加 crossOrigin 属性
+                            // 设置跨域属性
                             img.crossOrigin = 'Anonymous';
                             
                             img.onload = () => {
@@ -303,7 +316,7 @@
                                     const ctx = canvas.getContext('2d');
                                     
                                     // 降低最大尺寸以减少内存使用
-                                    const maxSize = 1024;
+                                    const maxSize = 800; // 降低最大尺寸
                                     let width = img.width;
                                     let height = img.height;
                                     
@@ -327,11 +340,15 @@
                                     // 清理 canvas
                                     ctx.clearRect(0, 0, width, height);
                                     
+                                    // 使用白色背景
+                                    ctx.fillStyle = '#FFFFFF';
+                                    ctx.fillRect(0, 0, width, height);
+                                    
                                     // 绘制图片
                                     ctx.drawImage(img, 0, 0, width, height);
                                     
                                     // 转换为较低质量的 JPEG
-                                    const compressedData = canvas.toDataURL('image/jpeg', 0.5);
+                                    const compressedData = canvas.toDataURL('image/jpeg', 0.7);
                                     
                                     // 清理内存
                                     ctx.clearRect(0, 0, width, height);
@@ -345,14 +362,38 @@
                                     });
                                 } catch (e) {
                                     console.error('压缩图片时出错:', e);
-                                    reject(e);
+                                    // 出错时返回原始图片
+                                    resolve({
+                                        data: base64,
+                                        width: img.width,
+                                        height: img.height
+                                    });
                                 }
                             };
 
+                            // 设置图片源
                             img.src = base64;
+                            
+                            // 添加超时处理
+                            setTimeout(() => {
+                                if (!img.complete) {
+                                    console.error('图片加载超时');
+                                    resolve({
+                                        data: base64,
+                                        width: 800,
+                                        height: 600
+                                    });
+                                }
+                            }, 10000); // 10秒超时
+                            
                         } catch (e) {
                             console.error('创建图片对象时出错:', e);
-                            reject(e);
+                            // 出错时返回原始数据
+                            resolve({
+                                data: base64,
+                                width: 800,
+                                height: 600
+                            });
                         }
                     });
                 }

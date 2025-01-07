@@ -1,0 +1,67 @@
+// 改进 showToast 函数
+function showToast(message, duration = 2000) {
+    try {
+        const toast = document.getElementById('toast');
+        if (toast) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+    } catch (e) {
+        console.error('显示提示信息时出错:', e);
+    }
+}
+
+// 添加文件类型检查
+function checkFileType(file) {
+    if (!file.type.startsWith('image/')) {
+        showToast('请选择图片文件');
+        return false;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+        showToast('图片太大，请选择小于20MB的图片');
+        return false;
+    }
+    return true;
+}
+
+// 修改文件输入处理
+input.addEventListener('change', async function(e) {
+    if (e.target.files && e.target.files[0]) {
+        try {
+            const file = e.target.files[0];
+            if (!checkFileType(file)) return;
+
+            showToast('正在处理图片...');
+            const reader = new FileReader();
+            
+            reader.onload = async function(event) {
+                try {
+                    const result = await compressImage(event.target.result);
+                    if (result && result.data) {
+                        photoData[`photo${i}`] = result.data;
+                        document.getElementById(`auto${i}`).checked = true;
+                        showToast('照片已保存');
+                    } else {
+                        throw new Error('图片处理结果无效');
+                    }
+                } catch (err) {
+                    console.error('处理图片时出错:', err);
+                    showToast('处理图片失败，请重试');
+                }
+            };
+            
+            reader.onerror = function() {
+                console.error('读取文件失败');
+                showToast('读取图片失败，请重试');
+            };
+            
+            reader.readAsDataURL(file);
+        } catch (err) {
+            console.error('处理文件时出错:', err);
+            showToast('处理文件失败，请重试');
+        }
+    }
+}); 
