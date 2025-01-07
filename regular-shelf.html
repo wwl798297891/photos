@@ -297,7 +297,11 @@
                                 canvas.width = width;
                                 canvas.height = height;
                                 ctx.drawImage(img, 0, 0, width, height);
-                                resolve(canvas.toDataURL('image/jpeg', 0.7));
+                                resolve({
+                                    data: canvas.toDataURL('image/jpeg', 0.7),
+                                    width: img.width,
+                                    height: img.height
+                                });
                             } catch (e) {
                                 console.error('压缩图片时出错:', e);
                                 reject(e);
@@ -416,7 +420,7 @@
                                     })
                                 );
 
-                                const compressedImage = await compressImage(partsPhotos[`photo${i}`]);
+                                const { data: compressedImage, width, height } = await compressImage(partsPhotos[`photo${i}`]);
                                 const imageBase64 = compressedImage.split(',')[1];
                                 const buffer = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
                                 
@@ -427,7 +431,7 @@
                                                 data: buffer,
                                                 transformation: {
                                                     width: 500,
-                                                    height: Math.round((500 * img.height) / img.width)
+                                                    height: Math.round((500 * height) / width)
                                                 }
                                             })
                                         ],
@@ -488,7 +492,7 @@
                                 }
                                 console.log(`包装照片 ${i} 数据类型:`, typeof imageData);
 
-                                const compressedImage = await compressImage(imageData);
+                                const { data: compressedImage, width, height } = await compressImage(imageData);
                                 const imageBase64 = compressedImage.split(',')[1];
                                 const buffer = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
                                 
@@ -499,7 +503,7 @@
                                                 data: buffer,
                                                 transformation: {
                                                     width: 500,
-                                                    height: Math.round((500 * img.height) / img.width)
+                                                    height: Math.round((500 * height) / width)
                                                 }
                                             })
                                         ],
@@ -535,7 +539,7 @@
                         if (assemblyPhotos[`photo${i}`]) {
                             console.log(`处理组装照片 ${i}`);
                             try {
-                                const compressedImage = await compressImage(assemblyPhotos[`photo${i}`]);
+                                const { data: compressedImage, width, height } = await compressImage(assemblyPhotos[`photo${i}`]);
                                 const imageBase64 = compressedImage.split(',')[1];
                                 const buffer = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
                                 
@@ -546,7 +550,7 @@
                                                 data: buffer,
                                                 transformation: {
                                                     width: 500,
-                                                    height: Math.round((500 * img.height) / img.width)
+                                                    height: Math.round((500 * height) / width)
                                                 }
                                             })
                                         ],
